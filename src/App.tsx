@@ -1,6 +1,7 @@
 import States from "./components/States";
 import "./App.css";
 import { useEffect, createContext, useState } from "react";
+import styled from "styled-components";
 
 interface FoodDataResult {
   state: string;
@@ -17,6 +18,7 @@ interface FoodsInfo {
 interface FoodData {
   foodData?: FoodsInfo;
   testProperty?: any;
+  stateFilter: string;
 }
 
 export const FoodDataContext = createContext<FoodData>({} as FoodData);
@@ -39,7 +41,9 @@ function App() {
 
   return (
     <div className="App">
-      <FoodDataContext.Provider value={{ foodData: foodData }}>
+      <Title>Recent Food Recalls</Title>
+      <SubTitle> Recalls for the 2022 calendar year </SubTitle>
+      <FoodDataContext.Provider value={{ foodData: foodData, stateFilter: stateFilter }}>
         <States setStateFilter={setStateFilter} />
       </FoodDataContext.Provider>
     </div>
@@ -47,3 +51,14 @@ function App() {
 }
 
 export default App;
+
+const Title = styled.h1`
+  @import url("https://fonts.googleapis.com/css2?family=Lora:wght@600&display=swap");
+  font-family: "Lora", serif;
+`;
+
+const SubTitle = styled.h2`
+  font-family: "Lora", serif;
+  font-weight: 300;
+  font-size: unset;
+`;
