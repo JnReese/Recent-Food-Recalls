@@ -1,24 +1,47 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import States from "./components/States";
+import "./App.css";
+import { useEffect, createContext, useState } from "react";
+
+interface FoodDataResult {
+  state: string;
+  recalling_firm: string;
+  reason_for_recall: string;
+  product_description: string;
+}
+
+interface FoodsInfo {
+  results: FoodDataResult[];
+  error: {};
+}
+
+interface FoodData {
+  foodData?: FoodsInfo;
+  testProperty?: any;
+}
+
+export const FoodDataContext = createContext<FoodData>({} as FoodData);
 
 function App() {
+  const [foodData, setFoodData] = useState<FoodsInfo>();
+  const [stateFilter, setStateFilter] = useState<string>("");
+
+  useEffect(() => {
+    fetch(
+      `https://api.fda.gov/food/enforcement.json?search=report_date:[20220101+TO+20221231]${
+        stateFilter ? `+AND+state:${stateFilter}` : ""
+      }&limit=999`
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        setFoodData(data);
+      });
+  }, [stateFilter]);
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <FoodDataContext.Provider value={{ foodData: foodData }}>
+        <States setStateFilter={setStateFilter} />
+      </FoodDataContext.Provider>
     </div>
   );
 }
