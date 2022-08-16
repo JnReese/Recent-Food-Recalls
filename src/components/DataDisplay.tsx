@@ -9,6 +9,9 @@ import Paper from "@mui/material/Paper";
 import { useContext, useRef, useEffect, useState } from "react";
 import { FoodDataContext } from "../App";
 import styled from "styled-components";
+import { defineTerms } from "./HighlightTerms";
+import Button from "@mui/material/Button";
+import Tooltip, { TooltipProps, tooltipClasses } from "@mui/material/Tooltip";
 
 function createData(state: string, product_description: string, reason_for_recall: string, recalFirm: string) {
   return { state, product_description, reason_for_recall, recalFirm };
@@ -18,6 +21,7 @@ export default function BasicTable() {
   const { foodData } = useContext(FoodDataContext);
   const [width, setWidth] = useState<number>(0);
   const [currentlyExpanded, setCurrentlyExpanded] = useState<number[]>([]);
+  const [definedTermHover, setDefinedTermHover] = useState<Boolean>(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,7 +40,7 @@ export default function BasicTable() {
 
   const handleLongDescription = (prod: string, idx: number) => {
     if (prod.length > 125 && !currentlyExpanded.includes(idx)) {
-      return prod.substring(0, 125) + "...  ";
+      return prod.substring(0, 125) + "... ";
     }
     return prod;
   };
@@ -51,78 +55,98 @@ export default function BasicTable() {
     }
   };
 
-  return (
-    <TableContainer component={Paper} ref={ref} sx={{ marginTop: "1em" }}>
-      <Table sx={{ minWidth: 375, display: "table", tableLayout: "fixed", width: "100%" }} aria-label="simple table">
-        <TableHead>
-          <TableRow>
-            <TableCell align="left" sx={{ fontWeight: 600, fontSize: "1.3em" }}>
-              Recall Firm
-            </TableCell>
-            <TableCell align="left" sx={{ fontWeight: 600, fontSize: "1.3em" }}>
-              Product Description
-            </TableCell>
-            {width > 572 ? (
-              <TableCell align="left" sx={{ fontWeight: 600, fontSize: "1.3em" }}>
-                Recall Reason
-              </TableCell>
-            ) : null}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {foodData?.error ? (
-            <TableRow>
-              <TableCell align="left" sx={{ display: "flex", tableLayout: "fixed", width: "100%" }}>
-                No Recalls for this State
-              </TableCell>
-            </TableRow>
+  const formatMarkup = (recallReason: string) => {
+    //figure out how to include all words in this logic.
+    const chunks = recallReason.split(/(acidified|Salmonella|Listeria monocytogenes|Sodium metabisulfite)/);
+    return (
+      <>
+        {chunks.map((chunk) =>
+          defineTerms.hasOwnProperty(chunk) ? (
+            <Tooltip title={defineTerms[chunk]} arrow>
+              <Highlight>{chunk}</Highlight>
+            </Tooltip>
           ) : (
-            newRows()?.map((row, idx) => {
-              return (
-                <TableRow key={idx} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
-                  <TableCell align="left">{row.recalFirm}</TableCell>
-                  <TableCell align="left">
-                    {row.product_description.length > 125
-                      ? handleLongDescription(row.product_description, idx)
-                      : row.product_description}
-                    {row.product_description.length > 125 ? (
-                      <Expand onClick={(e) => handleExpand(e, idx)}>⮟</Expand>
-                    ) : null}
-                  </TableCell>
+            chunk
+          )
+        )}
+      </>
+    );
+  };
 
-                  {width > 572 ? <TableCell align="left">{row.reason_for_recall}</TableCell> : null}
-                </TableRow>
-              );
-            })
-          )}
-        </TableBody>
-      </Table>
-    </TableContainer>
+  return (
+    <StyleContainer>
+      <TableContainer
+        component={Paper}
+        ref={ref}
+        sx={{
+          marginTop: "1em",
+          width: "60%",
+          margin: "0 auto",
+          boxShadow: "box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)",
+        }}
+      >
+        <Table sx={{ minWidth: 375, display: "table", tableLayout: "fixed", width: "100%" }} aria-label="simple table">
+          <TableHead>
+            <TableRow>
+              <TableCell align="left" sx={{ fontWeight: 600, fontSize: "1.3em" }}>
+                Recall Firm
+              </TableCell>
+              <TableCell align="left" sx={{ fontWeight: 600, fontSize: "1.3em" }}>
+                Product Description
+              </TableCell>
+              {width > 572 ? (
+                <TableCell align="left" sx={{ fontWeight: 600, fontSize: "1.3em" }}>
+                  Recall Reason
+                </TableCell>
+              ) : null}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {foodData?.error ? (
+              <TableRow>
+                <TableCell align="left" sx={{ display: "flex", tableLayout: "fixed", width: "100%" }}>
+                  No Recalls for this State
+                </TableCell>
+              </TableRow>
+            ) : (
+              newRows()?.map((row, idx) => {
+                return (
+                  <TableRow key={idx} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                    <TableCell align="left">{row.recalFirm}</TableCell>
+                    <TableCell align="left">
+                      {row.product_description.length > 125
+                        ? handleLongDescription(row.product_description, idx)
+                        : row.product_description}
+                      {row.product_description.length > 125 ? (
+                        <Button onClick={(e) => handleExpand(e, idx)} size="small">
+                          ⮟
+                        </Button>
+                      ) : null}
+                    </TableCell>
+
+                    {width > 572 ? <TableCell align="left">{formatMarkup(row.reason_for_recall)}</TableCell> : null}
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </StyleContainer>
   );
 }
 
 const Expand = styled.button`
   margin-left: 10px;
-  font-family: "Open Sans", sans-serif;
-  font-size: 9px;
-  letter-spacing: 2px;
-  text-decoration: none;
-  text-transform: uppercase;
-  color: #000;
-  cursor: pointer;
-  border: 3px solid;
-  padding: 0.25em 0.5em;
-  box-shadow: 1px 1px 0px 0px, 1px 1px 0px 0px, 2px 2px 0px 0px, 1px 1px 0px 0px, 2px 2px 0px 0px;
-  position: relative;
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: manipulation;
+`;
+const StyleContainer = styled.div`
+  margin-top: 1em;
+  margin-bottom: 5rem;
+`;
 
-  &:active {
-    box-shadow: 10px;
-  }
-
-  @media (min-width: 768px) {
-    padding: 0.25em 0.75em;
+const Highlight = styled.span`
+  background-color: #ffef62;
+  &:hover {
+    cursor: help;
   }
 `;
